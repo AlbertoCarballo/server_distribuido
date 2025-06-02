@@ -116,22 +116,23 @@ io.on("connection", (socket) => {
     });
 
     // 🔐 Login
-    socket.on("login", async ({ nombreUsuario, contraseña }, callback) => {
+    socket.on("login", async ({ nombreUsuario, contraseña, ip }, callback) => {
         try {
             const usuario = await Usuario.findOne({ nombreUsuario });
             if (!usuario) return callback({ success: false, mensaje: "Usuario no encontrado" });
             if (usuario.contraseña !== contraseña) return callback({ success: false, mensaje: "Contraseña incorrecta" });
-
-            const ipCliente = socket.handshake.address.replace(/^.*:/, "");
-            usuario.ip = ipCliente;
+    
+            // Guardar la IP enviada desde el cliente en lugar de la detectada
+            usuario.ip = ip || socket.handshake.address.replace(/^.*:/, "");
             await usuario.save();
-
+    
             return callback({ success: true, mensaje: "Login exitoso", usuario });
         } catch (err) {
             console.error(err);
             return callback({ success: false, mensaje: "Error en el servidor" });
         }
     });
+    
 });
 
 // 🟢 Iniciar servidor
