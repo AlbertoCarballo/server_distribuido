@@ -37,6 +37,17 @@ app.get("/usuarios/ips", async (req, res) => {
         res.status(500).json({ error: "Error interno del servidor" });
     }
 });
+// ✅ Ruta HTTP para obtener todos los mensajes
+app.get("/mensajes", async (req, res) => {
+    try {
+        const mensajes = await Mensaje.find(); // Puedes agregar filtros si quieres
+        res.json({ success: true, mensajes });
+    } catch (err) {
+        console.error("Error al obtener mensajes:", err);
+        res.status(500).json({ success: false, mensaje: "Error interno del servidor" });
+    }
+});
+
 
 // ✅ Conexión de sockets
 io.on("connection", (socket) => {
@@ -48,7 +59,7 @@ io.on("connection", (socket) => {
         mensaje: "Se ha unido un nuevo papuh"
     });
 
-    // Crear nuevo chat
+    // 🆕 Crear nuevo chat
     socket.on("crear_chat", async ({ nombre, participantes }, callback) => {
         try {
             const chatId = await obtenerSiguienteChatId();
@@ -61,18 +72,20 @@ io.on("connection", (socket) => {
         }
     });
 
-    // Enviar mensaje
+    // ✉️ Recibir y emitir mensaje
     socket.on("enviar_mensaje", async ({ chatId, usuario, mensaje }) => {
         try {
             const nuevoMensaje = new Mensaje({ chatId, usuario, mensaje });
             await nuevoMensaje.save();
+
+            // Emitir a todos los clientes conectados
             io.emit("chat_message", { chatId, usuario, mensaje });
         } catch (err) {
             console.error("Error guardando mensaje:", err);
         }
     });
 
-    // Obtener mensajes
+    // 📥 Obtener historial de mensajes
     socket.on("obtener_mensajes", async (chatId, callback) => {
         try {
             const mensajes = await Mensaje.find({ chatId });
@@ -83,10 +96,10 @@ io.on("connection", (socket) => {
         }
     });
 
-    // Registro de usuario
+    // 👤 Registro de usuario
     socket.on("registrar", async (data, callback) => {
         const { nombreUsuario, correo, contraseña } = data;
-        const ipCliente = socket.handshake.address.replace(/^.*:/, ""); // limpia IPv6 mapeada
+        const ipCliente = socket.handshake.address.replace(/^.*:/, "");
 
         try {
             const existe = await Usuario.findOne({ nombreUsuario });
@@ -102,7 +115,7 @@ io.on("connection", (socket) => {
         }
     });
 
-    // Login
+    // 🔐 Login
     socket.on("login", async ({ nombreUsuario, contraseña }, callback) => {
         try {
             const usuario = await Usuario.findOne({ nombreUsuario });
